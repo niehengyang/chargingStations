@@ -4,8 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "dev": "vite --mode dev",
+    "test": "vite --mode test", 
+    "pro": "vite --mode pro", 
+    "build:dev": "vue-tsc --noEmit && vite build --mode dev",   
+    "build:test": "vue-tsc --noEmit && vite build --mode test",    
+    "build:pro": "vue-tsc --noEmit && vite build --mode pro",
     "preview": "vite preview"
   },
   "dependencies": {

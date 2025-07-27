@@ -1,11 +1,8 @@
 import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
 const request = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 5000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // 请求拦截器
