@@ -1,0 +1,47 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
+  "compilerOptions": {
+    "target": "es6",
+    "useDefineForClassFields": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": true,
+    "jsx": "preserve",
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "declaration":true,
+    "lib": ["es6", "dom"],
+    "skipLibCheck": true,
+    "baseUrl": "./",
+    // 用于设置解析非相对模块名称的基本目录，相对模块不会受到baseUrl的影响
+    "paths": {
+      // 用于设置模块名到基于baseUrl的路径映射
+      "@/*": ["src/*"],
+      "components/*": ["src/components/*"],
+      "views/*": ["src/views/*"],
+      "utils/*": ["src/utils/*"],
+      "assets/*": ["src/assets/*"],
+      "styles/*": ["src/styles/*"],
+      "router/*": ["src/router/*"],
+      "store/*": ["src/store/*"],
+      "types/*": ["src/types/*"],
+      "services/*": ["src/services/*"],
+      "directives/*": ["src/directives/*"],
+      "enums/*": ["src/enums/*"],
+      "constants/*": ["src/constants/*"]
+    },
+    "exclude": [
+      "node_modules",
+      "**/*.spec.ts",
+      "**/*.test.ts",
+      "**/*.spec.tsx",
+      "**/*.test.tsx"
+    ]
+  }
+}
