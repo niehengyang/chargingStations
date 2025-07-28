@@ -1,11 +1,15 @@
-import { Router } from 'express'
-// 创建路由对象
-const router = Router()
+import { Router } from 'express';
+const router = Router();
 
-// 导入用户路由处理函数模块
-import { list } from '../router_handler/station.js'
+// 导入路由处理函数模块
+import { getAllStations, getStationById, createStation, updateStation, deleteStation, healthCheck } from '../router_handler/station.js';
 
-// 列表
-router.post('/list', list)
+// 定义CRUD路由
+router.get('/health', healthCheck);
+router.get('/', getAllStations);
+router.get('/:id', getStationById);
+router.post('/', createStation);
+router.put('/:id', updateStation);
+router.delete('/:id', deleteStation);
 
-export default router
+export default router;

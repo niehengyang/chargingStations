@@ -28,9 +28,9 @@ export const initDataDirectory = () => {
 };
 
 // 读取数据
-export const readData = () => {
+export const readData = (filePath = DB_PATH) => {
   try {
-    const rawData = fs.readFileSync(DB_PATH, 'utf8');
+    const rawData = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(rawData);
   } catch (error) {
     log('error', `读取数据错误: ${error.message}`);
@@ -39,9 +39,9 @@ export const readData = () => {
 };
 
 // 保存数据
-export const saveData = (data) => {
+export const saveData = (data, filePath = DB_PATH) => {
   try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
     return true;
   } catch (error) {
     log('error', `保存数据错误: ${error.message}`);

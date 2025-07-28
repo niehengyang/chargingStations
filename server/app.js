@@ -19,8 +19,7 @@ import { initDataDirectory, readData, saveData } from './utils/dataHandler.js';
 initDataDirectory();
 
 // 中间件
-app.use(express.json({ limit: '1mb' })); // 限制请求体大小
-
+app.use(express.json({ limit: '50mb' })); // 限制请求体大小
 // 将 cors 注册为全局中间件
 app.use(cors())
 
