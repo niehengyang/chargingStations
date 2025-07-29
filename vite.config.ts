@@ -1,40 +1,78 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import { resolve } from 'path';
-import AutoImport from 'unplugin-auto-import/vite'
-import Components from 'unplugin-vue-components/vite'
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import { fileURLToPath, URL } from "node:url";
+import { defineConfig, loadEnv } from "vite";
+import vue from "@vitejs/plugin-vue";
+import AutoImport from "unplugin-auto-import/vite";
+import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
+import Components from "unplugin-vue-components/vite";
+import { VueAmapResolver } from "@vuemap/unplugin-resolver";
+import legacy from "./legacy.ts";
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  // 基本路径
-  base: '/',
-   // 服务器选项
-  server: {
-    host: '0.0.0.0', // 指定服务器主机名
-    port: 5173, // 指定服务器端口
-    open: false, // 在服务器启动时自动打开浏览器
-    cors: true, // 为开发服务器配置 CORS
-  },
-   // 构建选项
-  build: {
-    outDir: 'dist', // 指定输出路径
-    assetsDir: 'assets', // 指定生成静态资源的存放路径
-    sourcemap: true, // 构建后是否生成 source map 文件
-    minify: 'terser', // 指定压缩方式，'terser' 或 'esbuild'
-  },
-  plugins: [vue(), 
-     AutoImport({
-      resolvers: [ElementPlusResolver()],
-    }),
-    Components({
-      resolvers: [ElementPlusResolver()],
-    }),
-  ],
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src') // 路径别名
-    },
-    extensions: ['.js', '.json', '.ts', '.vue'] // 使用路径别名时想要省略的后缀名，可以自己 增减
-  }
+export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, process.cwd(), "");
+    console.log("API URL:", env.VITE_API_URL);
+    console.log("App Title:", env.VITE_APP_TITLE);
+
+    // 代理配置
+    const proxyConfig: Record<string, any> = {};
+    if (env.VITE_PROXY_ENABLED === "true") {
+        proxyConfig["/api"] = {
+            target: env.VITE_PROXY_TARGET || env.VITE_API_URL || "http://localhost:3001",
+            changeOrigin: true,
+            rewrite: (path: string) => path.replace(/^\/api/, "")
+        };
+    }
+
+    return {
+        define: {
+            __APP_ENV__: env.APP_ENV,
+            __APP_TITLE__: JSON.stringify(env.VITE_APP_TITLE || "换电站管理系统"),
+            __APP_VERSION__: JSON.stringify(env.VITE_APP_VERSION || "1.0.0")
+        },
+        plugins: [
+            vue(),
+            legacy,
+            AutoImport({
+                resolvers: [
+                    ElementPlusResolver({
+                        exclude: /^ElAmap[A-Z]*/
+                    }),
+                    VueAmapResolver()
+                ]
+            }),
+            Components({
+                resolvers: [
+                    ElementPlusResolver({
+                        exclude: /^ElAmap[A-Z]*/
+                    }),
+                    VueAmapResolver()
+                ]
+            })
+        ],
+        optimizeDeps: {
+            include: ["lamejs"]
+        },
+        server: {
+            host: true,
+            port: 5173,
+            proxy: proxyConfig
+        },
+        build: {
+            outDir: env.VITE_BUILD_OUTPUT_DIR || "dist",
+            sourcemap: env.VITE_BUILD_SOURCEMAP === "true",
+            rollupOptions: {
+                output: {
+                    manualChunks: {
+                        vendor: ["vue", "vue-router", "pinia"],
+                        elementPlus: ["element-plus"],
+                        amap: ["@vuemap/vue-amap"]
+                    }
+                }
+            }
+        },
+        resolve: {
+            alias: {
+                "@": fileURLToPath(new URL("./src", import.meta.url))
+            }
+        }
+    };
 });
