@@ -12,7 +12,7 @@ VITE_PUBLIC_PATH = /
 
 # API 服务配置
 VITE_API_BASE_URL=http://8.156.71.74:3001/
-VITE_API_URL=hhttp://8.156.71.74:3001
+VITE_API_URL=http://8.156.71.74:3001
 
 
 # Web 应用配置
