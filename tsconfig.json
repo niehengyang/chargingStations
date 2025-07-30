@@ -35,13 +35,13 @@
       "directives/*": ["src/directives/*"],
       "enums/*": ["src/enums/*"],
       "constants/*": ["src/constants/*"]
-    },
-    "exclude": [
-      "node_modules",
-      "**/*.spec.ts",
-      "**/*.test.ts",
-      "**/*.spec.tsx",
-      "**/*.test.tsx"
-    ]
-  }
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "**/*.spec.tsx",
+    "**/*.test.tsx"
+  ]
 }
