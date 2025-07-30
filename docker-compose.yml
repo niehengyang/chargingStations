@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # 后端 API 服务
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    container_name: charging-station-api
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATA_DIR=/app/data
+      - DB_FILE=battery-swap-station-data.json
+      - PICTURES_DIR=/pictures
+      - MAX_FILE_SIZE=5
+      - LOG_LEVEL=info
+    volumes:
+      - api_data:/app/data
+      - api_logs:/var/log
+    networks:
+      - charging-station-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/station/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 前端 Web 服务
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend
+    container_name: charging-station-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - charging-station-network
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro  # SSL证书目录（可选）
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis 缓存服务（可选）
+  redis:
+    image: redis:7-alpine
+    container_name: charging-station-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - charging-station-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  api_data:
+    driver: local
+  api_logs:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  charging-station-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
