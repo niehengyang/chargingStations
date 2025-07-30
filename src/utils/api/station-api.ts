@@ -1,13 +1,14 @@
 
 import { request } from "../../request";
-import type { BatterySwapStation, BatterySwapStationData } from "../../types/charging-station";
+import type { BatterySwapStation, BatterySwapStationData, ApiResponse } from "../../types/charging-station";
 
 // API 端点
 const API_ENDPOINTS = {
     STATIONS: "/station",
     STATION_BY_ID: (id: string) => `/station/${id}`,
     STATION_PHOTOS: (id: string) => `/station/${id}/photos`,
-    HEALTH: "/health"
+    STATION_PHOTO_BY_ID: (stationId: string, photoId: string) => `/station/${stationId}/photos/${photoId}`,
+    HEALTH: "/station/health"
 };
 
 // 健康检查
@@ -33,13 +34,13 @@ export const checkServerConnection = async (): Promise<boolean> => {
 };
 
 // 获取所有换电站
-export const getAllStations = async (): Promise<BatterySwapStationData> => {
+export const getAllStations = async (): Promise<ApiResponse<BatterySwapStation[]>> => {
     try {
         if (import.meta.env.VITE_DEBUG_MODE === "true") {
             console.log(`[API] 获取所有换电站数据`);
         }
 
-        const response = await request.get<BatterySwapStationData>(API_ENDPOINTS.STATIONS);
+        const response = await request.get<ApiResponse<BatterySwapStation[]>>(API_ENDPOINTS.STATIONS);
         return response;
     } catch (error) {
         console.error("获取换电站数据失败:", error);
@@ -50,8 +51,8 @@ export const getAllStations = async (): Promise<BatterySwapStationData> => {
 // 根据ID获取换电站
 export const getStationById = async (id: string): Promise<BatterySwapStation> => {
     try {
-        const response = await request.get<BatterySwapStation>(API_ENDPOINTS.STATION_BY_ID(id));
-        return response;
+        const response = await request.get<{status: number, message: string, data: BatterySwapStation}>(API_ENDPOINTS.STATION_BY_ID(id));
+        return response.data;
     } catch (error) {
         throw new Error(`获取换电站失败: ${error}`);
     }
@@ -64,8 +65,8 @@ export const createStation = async (stationData: Omit<BatterySwapStation, "id">)
             console.log(`[API] 创建新换电站:`, stationData.name);
         }
 
-        const response = await request.post<BatterySwapStation>(API_ENDPOINTS.STATIONS, stationData);
-        return response;
+        const response = await request.post<{status: number, message: string, data: BatterySwapStation}>(API_ENDPOINTS.STATIONS, stationData);
+        return response.data;
     } catch (error) {
         console.error("创建换电站失败:", error);
         throw error;
@@ -79,8 +80,8 @@ export const updateStation = async (id: string, updates: Partial<BatterySwapStat
             console.log(`[API] 更新换电站: ${id}`);
         }
 
-        const response = await request.put<BatterySwapStation>(API_ENDPOINTS.STATION_BY_ID(id), updates);
-        return response;
+        const response = await request.put<{status: number, message: string, data: BatterySwapStation}>(API_ENDPOINTS.STATION_BY_ID(id), updates);
+        return response.data;
     } catch (error) {
         console.error(`更新换电站 ${id} 失败:`, error);
         throw error;
@@ -132,6 +133,21 @@ export const addPhotoToStation = async (
     }
 };
 
+// 删除换电站照片
+export const deletePhotoFromStation = async (stationId: string, photoId: string): Promise<any> => {
+    try {
+        if (import.meta.env.VITE_DEBUG_MODE === "true") {
+            console.log(`[API] 删除换电站照片: ${stationId}, 照片ID: ${photoId}`);
+        }
+
+        const response = await request.delete(API_ENDPOINTS.STATION_PHOTO_BY_ID(stationId, photoId));
+        return response;
+    } catch (error) {
+        console.error(`删除换电站照片 ${stationId}/${photoId} 失败:`, error);
+        throw error;
+    }
+};
+
 // API 服务类
 export class StationApiService {
     private static instance: StationApiService;
@@ -158,7 +174,7 @@ export class StationApiService {
     }
 
     // 获取所有换电站（带缓存）
-    public async getAllStationsWithCache(): Promise<BatterySwapStationData> {
+    public async getAllStationsWithCache(): Promise<ApiResponse<BatterySwapStation[]>> {
         const cacheKey = "stations_cache";
         const cacheMaxAge = Number(import.meta.env.VITE_CACHE_MAX_AGE) * 1000; // 转换为毫秒
 
@@ -202,15 +218,18 @@ export class StationApiService {
 
     // 搜索换电站
     public async searchStations(query: string): Promise<BatterySwapStation[]> {
-        const allStations = await this.getAllStationsWithCache();
+        const response = await this.getAllStationsWithCache();
         const searchTerm = query.toLowerCase();
 
-        return allStations.batterySwapStations.filter(
-            (station) =>
-                station.name.toLowerCase().includes(searchTerm) ||
-                station.address.toLowerCase().includes(searchTerm) ||
-                station.description.toLowerCase().includes(searchTerm)
-        );
+        if (response.status === 0 && response.data) {
+            return response.data.filter(
+                (station) =>
+                    station.name.toLowerCase().includes(searchTerm) ||
+                    station.address.toLowerCase().includes(searchTerm) ||
+                    station.description.toLowerCase().includes(searchTerm)
+            );
+        }
+        return [];
     }
 }
 

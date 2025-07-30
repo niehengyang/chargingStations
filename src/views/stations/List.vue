@@ -4,6 +4,10 @@
       <h2>换电站列表管理</h2>
       <div class="header-actions">
         <el-button type="default" @click="goHome" class="go-home-btn">返回首页</el-button>
+        <el-button type="primary" @click="handleCreateStation" class="create-station-btn">
+          <el-icon><Plus /></el-icon>
+          创建站点
+        </el-button>
         <el-input
           v-model="searchKeyword"
           placeholder="搜索换电站名称或地址"
@@ -116,22 +120,40 @@
         :pager-count="7"
       />
     </div>
+    <!-- 站点编辑器组件 -->
+    <StationEditor 
+      ref="stationEditorRef" 
+      @station-updated="handleStationUpdated"
+    />
+    <!-- 站点创建器组件 -->
+    <StationCreator 
+      v-model="showStationCreator" 
+      ref="stationCreatorRef" 
+      @station-created="handleStationCreated"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, Delete, Edit } from '@element-plus/icons-vue'
+import { Search, Delete, Edit, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted } from 'vue'
+import StationEditor from '../../components/StationEditor.vue'
+import StationCreator from '../../components/StationCreator.vue'
 
-import { stationApiService } from '../../utils/api/station-api'
+import { stationApiService, deleteStation } from '../../utils/api/station-api'
+import { ENV_CONFIG } from '../../config/env'
 
 function getPhotoUrl(photo: { path: string, filename: string }) {
   if (!photo) return ''
-  if (photo.path) return photo.path
-  return `/public/pictures/${photo.filename}`
+  if (photo.path) {
+    // 使用API基础URL拼接照片路径
+    const baseUrl = ENV_CONFIG.API_URL || 'http://localhost:3001'
+    return `${baseUrl}${photo.path}`
+  }
+  return `${ENV_CONFIG.API_URL || 'http://localhost:3001'}/pictures/${photo.filename}`
 }
 
 function getTotalCabinets(station: BatterySwapStation): number {
@@ -198,11 +220,15 @@ const pageSize = ref(10)
 // 添加缺失的编辑相关变量
 const editingStation = ref<BatterySwapStation | null>(null)
 const stationEditorRef = ref()
+// 添加创建站点相关变量
+const showStationCreator = ref(false)
+const stationCreatorRef = ref()
 
 // 恢复区县筛选计算属性
 const districts = computed(() => {
   const set = new Set<string>()
-  allStations.value.forEach(station => {
+  const stations = allStations.value || []
+  stations.forEach(station => {
     if (!station.address) return
     const match = station.address.match(/(?:云南省)?昆明市([一-龥]+?)区/)
     if (match && match[1]) set.add(match[1] + '区')
@@ -212,7 +238,7 @@ const districts = computed(() => {
 
 // 添加筛选和分页计算属性
 const filteredStations = computed(() => {
-  let result = allStations.value
+  let result = allStations.value || []
   if (searchKeyword.value.trim()) {
     const kw = searchKeyword.value.trim().toLowerCase()
     result = result.filter(station =>
@@ -230,7 +256,7 @@ const filteredStations = computed(() => {
 
 const pagedStations = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
-  return filteredStations.value.slice(start, start + pageSize.value)
+  return filteredStations.value?.slice(start, start + pageSize.value) || []
 })
 
 // 添加缺失的事件处理方法
@@ -258,9 +284,15 @@ async function fetchStations() {
   try {
     loading.value = true
     const response = await stationApiService.getAllStationsWithCache()
-    allStations.value = response.data
+    // 处理服务器返回的数据结构 {status, message, data}
+    if (response.status === 0 && response.data) {
+      allStations.value = response.data
+    } else {
+      allStations.value = response.batterySwapStations || []
+    }
     console.log("获取换电站数据成功:", response)
   } catch (error) {
+    console.error('获取换电站数据失败:', error)
     ElMessage.error('获取换电站数据失败')
   } finally {
     loading.value = false
@@ -288,20 +320,23 @@ const handleDeleteStation = async (station: BatterySwapStation) => {
         type: 'warning',
       }
     )
-    // const result = await deleteStation(station.id)
-    // if (result.success) {
-    //   const index = allStations.value.findIndex(s => s.id === station.id)
-    //   if (index > -1) {
-    //     allStations.value.splice(index, 1)
-    //   }
-    //   let successMessage = `换电站"${station.name}"已成功删除`
-    //   if (result.deletedPhotos && result.deletedPhotos > 0) {
-    //     successMessage += `，同时删除了 ${result.deletedPhotos} 张照片`
-    //   }
-    //   ElMessage.success(successMessage)
-    // } else {
-    //   ElMessage.error('删除失败，请重试')
-    // }
+    const result = await deleteStation(station.id)
+    if (result.success) {
+      // 清除缓存以确保列表数据更新
+      localStorage.removeItem('stations_cache')
+      
+      const index = allStations.value.findIndex(s => s.id === station.id)
+      if (index > -1) {
+        allStations.value.splice(index, 1)
+      }
+      let successMessage = `换电站"${station.name}"已成功删除`
+      if (result.deletedPhotos && result.deletedPhotos > 0) {
+        successMessage += `，同时删除了 ${result.deletedPhotos} 张照片`
+      }
+      ElMessage.success(successMessage)
+    } else {
+      ElMessage.error('删除失败，请重试')
+    }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除换电站失败:', error)
@@ -317,17 +352,39 @@ function handleEditStation(station: BatterySwapStation) {
   })
 }
 
-// function handleStationUpdated(updatedStation: BatterySwapStation) {
-//   const idx = allStations.value.findIndex(s => s.id === updatedStation.id)
-//   if (idx > -1) {
-//     Object.assign(allStations.value[idx], updatedStation)
-//     if (allStations.value[idx].serviceRadius === undefined) {
-//       allStations.value[idx].serviceRadius = 3.0
-//     }
-//   }
-//   ElMessage.success(`换电站“${updatedStation.name}”信息已更新`)
-//   editingStation.value = null
-// }
+function handleStationUpdated(updatedStation: BatterySwapStation) {
+  // 立即更新本地数据以提供即时反馈
+  const idx = allStations.value.findIndex(s => s.id === updatedStation.id)
+  if (idx > -1) {
+    Object.assign(allStations.value[idx], updatedStation)
+    if (allStations.value[idx].serviceRadius === undefined) {
+      allStations.value[idx].serviceRadius = 3.0
+    }
+  }
+  
+  // 重新获取最新数据以确保数据一致性
+  fetchStations()
+  
+  ElMessage.success(`换电站"${updatedStation.name}"信息已更新`)
+  editingStation.value = null
+}
+
+// 处理创建站点按钮点击
+function handleCreateStation() {
+  showStationCreator.value = true
+}
+
+// 处理站点创建完成事件
+function handleStationCreated(newStation: BatterySwapStation) {
+  // 清除缓存以确保列表数据更新
+  localStorage.removeItem('stations_cache')
+  
+  // 重新获取最新数据
+  fetchStations()
+  
+  ElMessage.success(`换电站"${newStation.name}"创建成功`)
+  showStationCreator.value = false
+}
 
 const getStatusType = (status: string) => {
   switch (status) {
@@ -375,6 +432,9 @@ const getStatusType = (status: string) => {
       width: 160px;
     }
     .go-home-btn {
+      margin-right: 12px;
+    }
+    .create-station-btn {
       margin-right: 12px;
     }
   }

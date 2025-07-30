@@ -5,10 +5,8 @@ import chalk from 'chalk';
 import express from 'express';
 // 导入 cors 中间件
 import cors from 'cors';
-import pkg from 'body-parser';
-const { urlencoded, json } = pkg;
-
-import { PORT, DATA_DIR, DB_PATH, MAX_FILE_SIZE, LOG_LEVEL } from './config/env.js';
+import { PORT, DATA_DIR, DB_PATH, MAX_FILE_SIZE, LOG_LEVEL, PICTURES_DIR } from './config/env.js';
+import path from 'path';
 
 // 创建 express 的服务器实例
 const app = express()
@@ -18,18 +16,22 @@ import { log } from './utils/logger.js';
 import { initDataDirectory, readData, saveData } from './utils/dataHandler.js';
 initDataDirectory();
 
-// 中间件
-app.use(express.json({ limit: '50mb' })); // 限制请求体大小
-// 将 cors 注册为全局中间件
-app.use(cors())
+// 配置跨域中间件
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-App-Version', 'X-App-Name']
+}));
 
-// 参数解析
-app.use(
-  urlencoded({
-    extended: true,
-  })
-);
-app.use(json());
+// 中间件 - 请求体解析
+app.use(express.json({ limit: '50mb' })); // JSON解析器
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // URL编码解析器
+
+// 配置静态资源访问路径
+const picturesPath = path.join(DATA_DIR, 'pictures');
+app.use('/pictures', express.static(picturesPath));
+console.log(`Static files served from: ${picturesPath}`);
 
 // 导入并注册用户路由模块
 import stationRouter from './router/station.js';

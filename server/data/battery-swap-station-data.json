@@ -27,6 +27,14 @@
           "description": "换电站主视图",
           "uploadTime": "2024-01-30T10:30:00Z",
           "size": 2048576
+        },
+        {
+          "id": "BSS001_1753888928658_zqpy7v",
+          "filename": "BSS001_1753888928658_zqpy7v.jpg",
+          "path": "/pictures/BSS001/BSS001_1753888928658_zqpy7v.jpg",
+          "description": "照片 - 9d97abbb55b042b89dffc76ed19878f6.jpg",
+          "uploadTime": "2025-07-30T15:22:06.676Z",
+          "size": 511765
         }
       ],
       "batteryCabinets": [
@@ -95,7 +103,7 @@
   ],
   "metadata": {
     "totalStations": 2,
-    "lastUpdated": "2025-07-28T14:44:00.238Z",
+    "lastUpdated": "2025-07-30T16:34:51.984Z",
     "version": "1.0",
     "dataSource": "昆明市换电基础设施管理平台",
     "coverage": {

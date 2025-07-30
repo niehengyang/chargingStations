@@ -6,6 +6,8 @@ export {
     updateStation,
     deleteStation,
     addPhotoToStation,
+    deletePhotoFromStation,
+    checkServerConnection,
     StationApiService,
     stationApiService
 } from "./station-api.ts";
