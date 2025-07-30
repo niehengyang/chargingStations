@@ -315,8 +315,8 @@ interface BatterySwapStation {
 
 如有问题或建议，请通过以下方式联系：
 
-- 📧 Email: [your-email@example.com]
-- 🐛 Issues: [GitHub Issues](https://github.com/your-username/chargingStationWeb/issues)
+- 📧 Email: [790227542@qq.com](mailto:790227542@qq.com)
+- 🐛 Issues: [GitHub Issues](https://github.com/niehengyang/chargingStationWeb/issues)
 
 ---
 
