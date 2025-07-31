@@ -17,8 +17,8 @@ import { ENV_CONFIG } from "./config/env.ts";
 // 初始化vue-amap
 initAMapApiLoader({
     // 从环境配置获取高德的key
-    key: ENV_CONFIG.AMAP_KEY || "e45318596a4e3aaa9a404a573f8a5669",
-    securityJsCode: ENV_CONFIG.AMAP_SECURITY_JS_CODE || "7fa84b42f2781af9444c102708ffcb28", // 新版key需要配合安全密钥使用
+    key: ENV_CONFIG.AMAP_KEY || "your_key",
+    securityJsCode: ENV_CONFIG.AMAP_SECURITY_JS_CODE || "your_security_js_code", // 新版key需要配合安全密钥使用
     Loca: {
         version: "2.0.0"
     },
