@@ -28,16 +28,16 @@
             
             <!-- 服务辐射范围圆圈 -->
             <el-amap-circle
-                v-for="(marker, index) in markers"
+                v-for="(marker, index) in visibleCircleMarkers"
                 :key="`circle-${index}`"
                 :center="marker.position"
                 :radius="marker.serviceRadius * 1000"
-                :stroke-color="getCircleStrokeColor(marker.status)"
+                :stroke-color="markerInfoRef?.getCircleStrokeColor(marker.status)"
                 :stroke-weight="2"
                 :stroke-opacity="1.0"
-                :fill-color="getCircleFillColor(marker.status)"
+                :fill-color="markerInfoRef?.getCircleFillColor(marker.status)"
                 :fill-opacity="0.05"
-                :stroke-style="getCircleStrokeStyle(marker.status)"
+                :stroke-style="markerInfoRef?.getCircleStrokeStyle(marker.status)"
             />
             <!-- 站点标记 -->
             <el-amap-marker
@@ -54,7 +54,7 @@
 
             
             <!-- 站点信息弹窗 -->
-            <MarkerInfo ref="markerInfoRef" />
+            <MarkerInfo ref="markerInfoRef" @service-radius-toggle="handleServiceRadiusToggle" />
         </el-amap>
 
       
@@ -86,33 +86,13 @@ import StationCreator from '@/components/StationCreator.vue'; // 引入 StationC
 import "../../assets/iconfonts/iconfont.css";
 import router from "@/router";
 
-// 根据站点状态获取圆圈边框颜色
-const getCircleStrokeColor = (status: string): string => {
-  switch (status) {
-    case '运营中':
-      return '#52c41a'; // 绿色
-    case '维护中':
-      return '#faad14'; // 橙色
-    case '停运':
-      return '#ff4d4f'; // 红色
-    default:
-      return '#1890ff'; // 蓝色
-  }
-};
+// 控制圆圈显示的状态
+const visibleCircles = ref<Set<string>>(new Set())
 
-// 根据站点状态获取圆圈填充颜色
-const getCircleFillColor = (status: string): string => {
-  switch (status) {
-    case '运营中':
-      return '#52c41a'; // 绿色
-    case '维护中':
-      return '#faad14'; // 橙色
-    case '停运':
-      return '#ff4d4f'; // 红色
-    default:
-      return '#1890ff'; // 蓝色
-  }
-};
+// 计算可见的圆圈标记
+const visibleCircleMarkers = computed(() => {
+  return markers.value.filter(marker => visibleCircles.value.has(marker.id))
+})
 
 // 从地址中提取省市区信息
 const extractAddressComponent = (address: string, type: 'province' | 'city' | 'district'): string => {
@@ -133,19 +113,7 @@ const extractAddressComponent = (address: string, type: 'province' | 'city' | 'd
   return result;
 }
 
-// 根据站点状态获取圆圈边框样式
-const getCircleStrokeStyle = (status: string): string => {
-  switch (status) {
-    case '运营中':
-      return 'solid'; // 实线
-    case '维护中':
-      return 'dashed'; // 虚线
-    case '停运':
-      return 'dotted'; // 点线
-    default:
-      return 'solid'; // 实线
-  }
-};
+
 
 // 定义地图标记类型 - 基于 battery-swap-station-data.json 结构
 interface MapMarker {
@@ -337,6 +305,15 @@ const handleStationUpdated = (updatedStation: any): void => {
   // 重新加载站点数据以确保数据同步
   loadStations();
 };
+
+// 处理服务半径开关切换
+const handleServiceRadiusToggle = (enabled: boolean, markerId: string) => {
+  if (enabled) {
+    visibleCircles.value.add(markerId)
+  } else {
+    visibleCircles.value.delete(markerId)
+  }
+}
 
 const handleMenuClick = (action: string) => {
   if (action === '创建站点') {

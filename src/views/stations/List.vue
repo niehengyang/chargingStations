@@ -66,7 +66,12 @@
       <el-table-column prop="district" label="区域" min-width="80" />
       <el-table-column prop="status" label="状态" min-width="80">
         <template #default="scope">
-          <el-tag :type="getStatusType(scope.row.status)">{{ scope.row.status }}</el-tag>
+          <el-tag 
+            :type="getStatusType(scope.row.status)"
+            :class="scope.row.status === '存量' ? 'status-tag-存量' : ''"
+          >
+            {{ scope.row.status }}
+          </el-tag>
         </template>
       </el-table-column>
       <el-table-column label="可用/总电池柜" min-width="120">
@@ -283,17 +288,24 @@ const handlePageSizeChange = (size: number) => {
 async function fetchStations() {
   try {
     loading.value = true
+    console.log('开始获取换电站数据...')
     const response = await stationApiService.getAllStationsWithCache()
+    console.log('API响应:', response)
+    
     // 处理服务器返回的数据结构 {status, message, data}
     if (response.status === 0 && response.data) {
       allStations.value = response.data
+      console.log('成功设置站点数据:', allStations.value)
     } else {
-      allStations.value = response.batterySwapStations || []
+      // 如果响应格式不正确，尝试直接使用响应数据
+      allStations.value = Array.isArray(response) ? response : []
+      console.warn('API响应格式异常:', response)
     }
     console.log("获取换电站数据成功:", response)
   } catch (error) {
-    console.error('获取换电站数据失败:', error)
-    ElMessage.error('获取换电站数据失败')
+    // console.error('获取换电站数据失败:', error)
+    ElMessage.error('获取换电站数据失败: ' + error.message)
+    allStations.value = []
   } finally {
     loading.value = false
   }
@@ -301,6 +313,8 @@ async function fetchStations() {
 
 // 添加生命周期钩子
 onMounted(() => {
+  // 清除可能存在的缓存
+  localStorage.removeItem('stations_cache')
   fetchStations()
 })
 
@@ -339,7 +353,6 @@ const handleDeleteStation = async (station: BatterySwapStation) => {
     }
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('删除换电站失败:', error)
       ElMessage.error('删除失败，请检查网络连接')
     }
   }
@@ -392,6 +405,7 @@ const getStatusType = (status: string) => {
     case '维护中': return 'warning'
     case '暂停服务': return 'danger'
     case '建设中': return 'info'
+    case '存量': return ''
     default: return 'info'
   }
 }
@@ -480,5 +494,12 @@ const getStatusType = (status: string) => {
   background: #fff;
   border-top: 1px solid #ececec;
   margin-top: 24px;
+}
+
+/* 存量自定义样式 */
+:deep(.status-tag-存量) {
+  background-color: #f3f0ff !important;
+  border-color: #722ed1 !important;
+  color: #722ed1 !important;
 }
 </style>
