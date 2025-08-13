@@ -237,7 +237,6 @@ const districts = computed(() => {
     
     // 确保stations是数组
     if (!Array.isArray(stations)) {
-      console.warn('allStations.value不是数组:', stations)
       return []
     }
     
@@ -273,7 +272,6 @@ const filteredStations = computed(() => {
     
     // 确保result是数组
     if (!Array.isArray(result)) {
-      console.warn('allStations.value不是数组，使用空数组')
       return []
     }
     
@@ -310,7 +308,6 @@ const pagedStations = computed(() => {
   try {
     const filtered = filteredStations.value
     if (!Array.isArray(filtered)) {
-      console.warn('filteredStations不是数组，返回空数组')
       return []
     }
     
@@ -347,25 +344,19 @@ const handlePageSizeChange = (size: number) => {
 async function fetchStations() {
   try {
     loading.value = true
-    console.log('开始获取换电站数据...')
     const response = await stationApiService.getAllStationsWithCache()
-    console.log('API响应:', response)
     
     // 处理服务器返回的数据结构 {status, message, data}
     if (response && response.status === 0 && Array.isArray(response.data)) {
       allStations.value = response.data
-      console.log('成功设置站点数据:', allStations.value.length, '个站点')
     } else if (Array.isArray(response)) {
       // 兼容直接返回数组的情况
       allStations.value = response
-      console.log('使用数组格式数据:', allStations.value.length, '个站点')
     } else {
       // 如果响应格式不正确，设置为空数组
       allStations.value = []
-      console.warn('API响应格式异常，设置为空数组:', response)
       ElMessage.warning('获取到的数据格式异常，请检查服务器状态')
     }
-    console.log("获取换电站数据完成")
   } catch (error) {
     console.error('获取换电站数据失败:', error)
     ElMessage.error('获取换电站数据失败: ' + (error?.message || '未知错误'))

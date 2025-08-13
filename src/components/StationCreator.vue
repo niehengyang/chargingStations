@@ -383,7 +383,6 @@ const formData = reactive({
 watch(() => formData.province, (province) => {
   if (province === '云南省') {
     // 增强数据加载逻辑，支持多种JSON结构
-console.log('yunnanDistricts raw data:', yunnanDistricts);
 
 // 尝试多种数据结构访问方式
 let yunnanProvince = null;
@@ -396,16 +395,13 @@ if (yunnanDistricts?.provinces) {
 }
 // 结构2: { cities: [{ name: '昆明市', ... }, ...] } (直接城市数组)
 else if (yunnanDistricts?.cities) {
-  console.log('Using direct cities array structure');
   citiesData = yunnanDistricts.cities;
 }
 // 结构3: [{ name: '昆明市', ... }, ...] (顶级城市数组)
 else if (Array.isArray(yunnanDistricts)) {
-  console.log('Using top-level cities array structure');
   citiesData = yunnanDistricts;
 }
 
-console.log('Final cities data:', citiesData);
 cities.value = citiesData;
 
 // 标准化城市数据格式
@@ -413,8 +409,6 @@ cities.value = cities.value.map(city => ({
   name: city.name || city.city || 'Unnamed City',
   districts: city.districts || city.areas || []
 }));
-
-console.log('Normalized cities data:', cities.value);
     formData.city = ''
     districts.value = []
   }
@@ -427,7 +421,6 @@ watch(() => formData.city, (city) => {
 const selectedCity = cities.value?.find(cityItem => 
   cityItem.name === city || cityItem.city === city
 );
-console.log(`Searching for city: ${city}`, selectedCity);
 
 // 标准化区域数据
 if (selectedCity) {
@@ -435,7 +428,6 @@ if (selectedCity) {
   const districtData = selectedCity.districts || selectedCity.areas || selectedCity.regions || [];
   // 标准化区域格式
   districts.value = districtData.map(district => district.name || district.district || district);
-  console.log('Loaded and normalized districts:', districts.value);
 } else {
   console.warn('No districts found for city:', city);
   districts.value = [];

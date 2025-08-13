@@ -16,9 +16,6 @@ import { ENV_CONFIG, getAmapConfigInfo } from "./config/env.ts";
 
 // 验证高德地图配置
 const amapConfig = getAmapConfigInfo();
-if (ENV_CONFIG.DEBUG_MODE) {
-    console.log('高德地图配置信息:', amapConfig);
-}
 
 if (!amapConfig.validation.isValid) {
     console.error('高德地图配置错误:', amapConfig.validation.errors);

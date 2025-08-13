@@ -16,6 +16,13 @@
             :zoom="zoom" 
             :center="center" 
             :map-style="currentMapStyle"
+            :animateEnable="false"
+            :resizeEnable="true"
+            :rotateEnable="false"
+            :pitchEnable="false"
+            :scrollWheel="true"
+            :touchZoom="true"
+            :keyboardEnable="false"
             @init="onInit"
             class="map-container"
         >
@@ -71,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, type Ref, computed, onMounted } from "vue";
+import { ref, type Ref, computed, onMounted, onUnmounted } from "vue";
 import MarkerInfo from "@/components/MarkerInfo.vue";
 import MapStyleSelector from "@/components/MapStyleSelector.vue";
 import CustomMarker from "@/components/CustomMarker.vue";
@@ -85,6 +92,31 @@ import StationCreator from '@/components/StationCreator.vue'; // 引入 StationC
 // 引入图标字体
 import "../../assets/iconfonts/iconfont.css";
 import router from "@/router";
+
+// 防抖函数
+const debounce = (func: Function, wait: number) => {
+  let timeout: NodeJS.Timeout | null = null;
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      timeout = null;
+      func(...args);
+    };
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
+// 节流函数
+const throttle = (func: Function, limit: number) => {
+  let inThrottle: boolean;
+  return function executedFunction(...args: any[]) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+};
 
 // 控制圆圈显示的状态
 const visibleCircles = ref<Set<string>>(new Set())
@@ -189,6 +221,9 @@ const handleStyleChange = (styleUrl: string): void => {
   }
 };
 
+// 缩放事件处理器
+let zoomEventListeners: any[] = [];
+
 const onInit = (e: AMapInstance): void => {
   e.plugin(['AMap.ToolBar'], () => {
     const toolBar = new (window as any).AMap.ToolBar({
@@ -196,8 +231,25 @@ const onInit = (e: AMapInstance): void => {
     });
     e.addControl(toolBar);
   });
+  
+  // 添加缩放事件的防抖处理
+  const debouncedZoomHandler = debounce(() => {
+    // 缩放结束后的处理逻辑
+  }, 300);
+  
+  // 添加缩放开始事件的节流处理
+  const throttledZoomStartHandler = throttle(() => {
+    // 缩放开始时的处理逻辑
+  }, 100);
+  
+  // 监听缩放事件
+  const zoomStartListener = e.on('zoomstart', throttledZoomStartHandler);
+  const zoomEndListener = e.on('zoomend', debouncedZoomHandler);
+  
+  // 保存事件监听器引用，用于清理
+  zoomEventListeners = [zoomStartListener, zoomEndListener];
+  
   map.value = e;
-  console.log('map init: ', e);
 }
 
 // 站点数据
@@ -264,6 +316,24 @@ onMounted(() => {
   loadStations();
 });
 
+// 组件卸载时清理事件监听器
+onUnmounted(() => {
+  // 清理缩放事件监听器
+  if (zoomEventListeners.length > 0) {
+    zoomEventListeners.forEach(listener => {
+      if (listener && typeof listener.off === 'function') {
+        listener.off();
+      }
+    });
+    zoomEventListeners = [];
+  }
+  
+  // 清理地图实例
+  if (map.value) {
+    map.value = null;
+  }
+});
+
 const markerInfoRef: Ref<MarkerInfoInstance | null> = ref(null);
 const stationCreatorRef = ref();
 
@@ -277,12 +347,11 @@ const clickArrayMarker = (marker: any): void => {
 const handleSearchLocationSelected = (location: [number, number], name: string): void => {
   // 更新地图中心
   center.value = location;
-  console.log('搜索位置已选择:', name, location);
 };
 
 // 处理搜索清除事件
 const handleSearchClear = (): void => {
-  console.log('搜索标记已清除');
+  // 搜索标记已清除
 };
 
 // 添加响应式变量控制创建对话框显示

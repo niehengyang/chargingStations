@@ -15,7 +15,7 @@
           :model="formData"
           :rules="formRules"
           label-width="120px"
-          class="edit-form"
+           class="edit-form"
         >
           <!-- 基本信息 -->
           <el-card class="form-card">
@@ -433,7 +433,7 @@ watch(() => formData.province, (province) => {
 // 监听城市变化加载区域列表
 watch(() => formData.city, (city) => {
   if (city) {
-    const selectedCity = yunnanDistricts.cities.find(item => item.city === city)
+    const selectedCity = yunnanDistricts.cities.find((item: { city: string }) => item.city === city)
     if (selectedCity) {
       districts.value = selectedCity.districts
       formData.district = ''
@@ -616,7 +616,7 @@ watch(() => formData.city, (city) => {
   }
   
   const handleFileRemove = (file: UploadFile) => {
-    const index = formData.photos.findIndex(photo => photo.filename === file.name)
+    const index = formData.photos.findIndex((photo: { filename: string }) => photo.filename === file.name)
     if (index > -1) {
       const removedPhoto = formData.photos[index]
       
@@ -629,7 +629,7 @@ watch(() => formData.city, (city) => {
   }
   
   const removePhoto = (photoId: string) => {
-    const photo = formData.photos.find(p => p.id === photoId)
+    const photo = formData.photos.find((p: { id: string }) => p.id === photoId)
     if (!photo) {
       ElMessage.error('照片不存在')
       return
@@ -642,7 +642,7 @@ watch(() => formData.city, (city) => {
       localStorage.removeItem(tempPhotoKey)
       
       // 从表单数据中移除
-      const index = formData.photos.findIndex(p => p.id === photoId)
+      const index = formData.photos.findIndex((p: { id: string }) => p.id === photoId)
       if (index > -1) {
         formData.photos.splice(index, 1)
       }
@@ -650,7 +650,7 @@ watch(() => formData.city, (city) => {
     }
 
     // 如果是已保存的照片，只从界面移除并标记为待删除
-    const index = formData.photos.findIndex(p => p.id === photoId)
+    const index = formData.photos.findIndex((p: { id: string }) => p.id === photoId)
     if (index > -1) {
       formData.photos.splice(index, 1)
       // 添加到待删除列表
@@ -749,7 +749,7 @@ watch(() => formData.city, (city) => {
       // 更新换电站（不包含新照片，新照片通过单独接口添加）
       const stationDataToUpdate = {
         ...formData,
-        photos: formData.photos.filter(photo => !photo.id.startsWith('temp_')) // 只保留已存在的照片
+        photos: formData.photos.filter((photo: { id: string }) => !photo.id.startsWith('temp_')) // 只保留已存在的照片
       }
       const updatedStation = await updateStation(formData.id, stationDataToUpdate)
 
@@ -758,11 +758,10 @@ watch(() => formData.city, (city) => {
         // 过滤掉可能不存在的照片ID（防止重复删除）
         const validPhotosToDelete = photosToDelete.value.filter(photoId => {
           // 检查原始站点数据中是否存在该照片
-          return currentStation.value?.photos?.some(photo => photo.id === photoId)
+          return currentStation.value?.photos?.some((photo: { id: string }) => photo.id === photoId)
         })
         
         if (validPhotosToDelete.length === 0) {
-           console.log('没有需要删除的有效照片，可能照片已被删除或不存在')
            photosToDelete.value = []
          } else {
           let deletedCount = 0
@@ -778,8 +777,6 @@ watch(() => formData.city, (city) => {
                 if (result.warning) {
                   // 照片记录删除成功但文件删除失败
                   console.warn(`照片 ${photoId} 记录删除成功，但文件删除失败: ${result.warning}`)
-                } else {
-                  console.log(`照片 ${photoId} 已完全删除`)
                 }
               }
             } catch (error) {
@@ -801,9 +798,7 @@ watch(() => formData.city, (city) => {
           
           // 根据删除结果显示消息
           if (failedCount === 0) {
-            if (deletedCount > 0) {
-              console.log(`成功处理 ${deletedCount} 张照片的删除`)
-            }
+            // 删除成功
           } else {
             ElMessage.warning(`${failedCount} 张照片删除失败，${deletedCount} 张照片删除成功`)
           }
@@ -814,7 +809,7 @@ watch(() => formData.city, (city) => {
       }
 
       // 处理新上传的照片
-      const newPhotos = formData.photos.filter(photo => photo.id.startsWith('temp_'))
+      const newPhotos = formData.photos.filter((photo: { id: string }) => photo.id.startsWith('temp_'))
       if (newPhotos.length > 0) {
         for (const tempPhoto of newPhotos) {
           try {
@@ -841,7 +836,6 @@ watch(() => formData.city, (city) => {
               
               // 上传照片到服务器
               await addPhotoToStation(updatedStation.id, photoDataToUpload)
-              console.log(`照片 ${filename} 上传成功`)
             }
           } catch (error) {
             console.error(`上传照片失败: ${tempPhoto.filename}`, error)
@@ -851,8 +845,8 @@ watch(() => formData.city, (city) => {
       }
 
       // 清理所有临时照片缓存数据
-      const allTempPhotos = formData.photos.filter(photo => photo.id.startsWith('temp_'))
-      allTempPhotos.forEach(tempPhoto => {
+      const allTempPhotos = formData.photos.filter((photo: { id: string }) => photo.id.startsWith('temp_'))
+      allTempPhotos.forEach((tempPhoto: { id: any }) => {
         removePhotoFromLocalStorage(tempPhoto.id)
       })
 

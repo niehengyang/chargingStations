@@ -120,7 +120,6 @@ watch(() => props.modelValue, (newValue) => {
 // 地图初始化
 const onMapInit = (map: any) => {
   mapInstance.value = map
-  console.log('地图选择器初始化完成')
   
   // 添加工具栏插件
   map.plugin(['AMap.ToolBar'], () => {
@@ -349,4 +348,4 @@ defineExpose({
     }
   }
 }
-</style> 
+</style>

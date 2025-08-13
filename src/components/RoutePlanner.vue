@@ -60,7 +60,6 @@ onMounted(async () => {
     if (response.status === 0 && response.data) {
       stations.value = response.data
     }
-    console.log('获取到的stations.value', stations.value)
   } catch (error) {
     console.error('获取站点数据失败:', error)
   }
@@ -76,9 +75,9 @@ const canPlanRoute = computed(() =>
   startStationId.value !== endStationId.value
 )
 
-// 调试 watch
+// 监听路线规划参数变化
 watch([startStationId, endStationId, canPlanRoute], ([start, end, can]) => {
-  console.log('startStationId:', start, 'endStationId:', end, 'canPlanRoute:', can)
+  // 路线规划参数已更新
 })
 
 // 路线规划

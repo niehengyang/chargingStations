@@ -85,7 +85,6 @@ const clearSearchMarker = (): void => {
     searchMarkerName.value = '';
     searchMarkerInfo.value = '';
     emit('search-clear');
-    console.log('搜索标记已清除');
 };
 
 // 处理搜索位置选择
@@ -107,7 +106,6 @@ const handleLocationSelect = (location: [number, number], name: string): void =>
     emit('location-selected', location, name);
     
     // 显示成功消息
-    console.log('地图已跳转到:', name, location);
     
     // 10秒后自动清除搜索标记
     setTimeout(() => {
@@ -117,7 +115,6 @@ const handleLocationSelect = (location: [number, number], name: string): void =>
 
 // 处理搜索选择事件
 const handleSearchSelect = (e: any) => {
-    console.log('handleSearchSelect: ', e);
     
     // 尝试多种可能的数据结构
     let location: [number, number] | null = null;
@@ -146,13 +143,11 @@ const handleSearchSelect = (e: any) => {
 
 // 处理搜索事件
 const handleSearch = (e: any) => {
-    console.log('handleSearch: ', e);
     // 搜索事件主要用于调试，实际的位置跳转由 select 和 choose 事件处理
 };
 
 // 处理搜索确认事件
 const handleSearchChoose = (e: any) => {
-    console.log('handleSearchChoose: ', e);
     
     // 尝试多种可能的数据结构
     let location: [number, number] | null = null;
@@ -320,4 +315,4 @@ defineExpose({
         opacity: 1;
     }
 }
-</style> 
+</style>
