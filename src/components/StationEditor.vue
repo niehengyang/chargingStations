@@ -762,7 +762,6 @@ watch(() => formData.city, (city) => {
         })
         
         if (validPhotosToDelete.length === 0) {
-           console.log('没有需要删除的有效照片，可能照片已被删除或不存在')
            photosToDelete.value = []
          } else {
           let deletedCount = 0
@@ -778,8 +777,6 @@ watch(() => formData.city, (city) => {
                 if (result.warning) {
                   // 照片记录删除成功但文件删除失败
                   console.warn(`照片 ${photoId} 记录删除成功，但文件删除失败: ${result.warning}`)
-                } else {
-                  console.log(`照片 ${photoId} 已完全删除`)
                 }
               }
             } catch (error) {
@@ -801,9 +798,7 @@ watch(() => formData.city, (city) => {
           
           // 根据删除结果显示消息
           if (failedCount === 0) {
-            if (deletedCount > 0) {
-              console.log(`成功处理 ${deletedCount} 张照片的删除`)
-            }
+            // 删除成功
           } else {
             ElMessage.warning(`${failedCount} 张照片删除失败，${deletedCount} 张照片删除成功`)
           }
@@ -841,7 +836,6 @@ watch(() => formData.city, (city) => {
               
               // 上传照片到服务器
               await addPhotoToStation(updatedStation.id, photoDataToUpload)
-              console.log(`照片 ${filename} 上传成功`)
             }
           } catch (error) {
             console.error(`上传照片失败: ${tempPhoto.filename}`, error)
