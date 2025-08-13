@@ -315,6 +315,7 @@ async function fetchStations() {
 onMounted(() => {
   // 清除可能存在的缓存
   localStorage.removeItem('stations_cache')
+  // 强制刷新数据以获取最新排序
   fetchStations()
 })
 

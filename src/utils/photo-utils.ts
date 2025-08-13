@@ -82,11 +82,32 @@ export const generateTempPhotoId = (): string => {
   return `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
-// 生成照片ID
+// 生成照片ID（与后端保持一致的格式）
 export const generatePhotoId = (stationId: string, existingPhotos: PhotoData[]): string => {
-  const timestamp = Date.now()
-  const random = Math.random().toString(36).substr(2, 6)
-  return `${stationId}_${timestamp}_${random}`
+  if (!existingPhotos || existingPhotos.length === 0) {
+    return `${stationId}_001`
+  }
+  
+  // 提取所有照片ID并找到最大的数字部分
+  const photoIds = existingPhotos
+    .map(p => {
+      const parts = p.id.split('_')
+      // 兼容旧格式和新格式
+      if (parts.length >= 2) {
+        const lastPart = parts[parts.length - 1]
+        // 如果最后一部分是纯数字，使用它；否则使用倒数第二部分
+        const numPart = /^\d+$/.test(lastPart) ? lastPart : parts[parts.length - 2]
+        return parseInt(numPart, 10)
+      }
+      return 0
+    })
+    .filter(num => !isNaN(num))
+  
+  const maxPhotoId = photoIds.length > 0 ? Math.max(...photoIds) : 0
+  const newPhotoId = maxPhotoId + 1
+  
+  // 格式化为3位数字
+  return `${stationId}_${String(newPhotoId).padStart(3, '0')}`
 }
 
 // 生成照片文件名

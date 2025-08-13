@@ -746,22 +746,71 @@ watch(() => formData.city, (city) => {
         return
       }
 
-      // 更新换电站
-      const updatedStation = await updateStation(formData.id, formData)
+      // 更新换电站（不包含新照片，新照片通过单独接口添加）
+      const stationDataToUpdate = {
+        ...formData,
+        photos: formData.photos.filter(photo => !photo.id.startsWith('temp_')) // 只保留已存在的照片
+      }
+      const updatedStation = await updateStation(formData.id, stationDataToUpdate)
 
       // 处理待删除的照片
       if (photosToDelete.value.length > 0) {
-        for (const photoId of photosToDelete.value) {
-          try {
-            await deletePhotoFromStation(updatedStation.id, photoId)
-            console.log(`照片 ${photoId} 已从服务器删除`)
-          } catch (error) {
-            console.error(`删除照片 ${photoId} 失败:`, error)
-            ElMessage.warning(`照片删除失败，但换电站已更新成功`)
+        // 过滤掉可能不存在的照片ID（防止重复删除）
+        const validPhotosToDelete = photosToDelete.value.filter(photoId => {
+          // 检查原始站点数据中是否存在该照片
+          return currentStation.value?.photos?.some(photo => photo.id === photoId)
+        })
+        
+        if (validPhotosToDelete.length === 0) {
+           console.log('没有需要删除的有效照片，可能照片已被删除或不存在')
+           photosToDelete.value = []
+         } else {
+          let deletedCount = 0
+          let failedCount = 0
+          
+          for (const photoId of validPhotosToDelete) {
+            try {
+              const result = await deletePhotoFromStation(updatedStation.id, photoId)
+              
+              // 检查删除结果
+              if (result && result.status === 0) {
+                deletedCount++
+                if (result.warning) {
+                  // 照片记录删除成功但文件删除失败
+                  console.warn(`照片 ${photoId} 记录删除成功，但文件删除失败: ${result.warning}`)
+                } else {
+                  console.log(`照片 ${photoId} 已完全删除`)
+                }
+              }
+            } catch (error) {
+              console.error(`删除照片 ${photoId} 失败:`, error)
+              
+              // 检查是否是404错误（照片不存在）
+              if (error.response?.status === 404) {
+                // 照片不存在，但这不算失败，因为目标已经达到（照片不存在了）
+                deletedCount++
+                console.warn(`照片 ${photoId} 不存在，可能已被删除`)
+              } else {
+                // 其他错误才算真正的失败
+                failedCount++
+                const errorMessage = error.response?.data?.message || error.message || '未知错误'
+                console.error(`照片 ${photoId} 删除失败: ${errorMessage}`)
+              }
+            }
           }
+          
+          // 根据删除结果显示消息
+          if (failedCount === 0) {
+            if (deletedCount > 0) {
+              console.log(`成功处理 ${deletedCount} 张照片的删除`)
+            }
+          } else {
+            ElMessage.warning(`${failedCount} 张照片删除失败，${deletedCount} 张照片删除成功`)
+          }
+          
+          // 清空待删除列表
+          photosToDelete.value = []
         }
-        // 清空待删除列表
-        photosToDelete.value = []
       }
 
       // 处理新上传的照片

@@ -12,7 +12,18 @@ import pinia from "./stores/index";
 import VueAMap, { initAMapApiLoader } from "@vuemap/vue-amap";
 import "@vuemap/vue-amap/dist/style.css";
 // 引入环境配置
-import { ENV_CONFIG } from "./config/env.ts";
+import { ENV_CONFIG, getAmapConfigInfo } from "./config/env.ts";
+
+// 验证高德地图配置
+const amapConfig = getAmapConfigInfo();
+if (ENV_CONFIG.DEBUG_MODE) {
+    console.log('高德地图配置信息:', amapConfig);
+}
+
+if (!amapConfig.validation.isValid) {
+    console.error('高德地图配置错误:', amapConfig.validation.errors);
+    alert('高德地图配置错误:\n' + amapConfig.validation.errors.join('\n'));
+}
 
 // 初始化vue-amap
 initAMapApiLoader({

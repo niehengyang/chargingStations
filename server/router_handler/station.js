@@ -56,10 +56,25 @@ export const healthCheck = (req, res) => {
 export const getAllStations = (req, res) => {
   try {
     const data = readData(STATIONS_FILE);
+    
+    // 按创建时间倒序排列，最新的在前面
+    const sortedStations = data.batterySwapStations.sort((a, b) => {
+      // 如果有createdAt字段，使用它进行排序
+      if (a.createdAt && b.createdAt) {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      // 如果没有createdAt，使用establishmentDate作为备选
+      if (a.basicInfo?.establishmentDate && b.basicInfo?.establishmentDate) {
+        return new Date(b.basicInfo.establishmentDate) - new Date(a.basicInfo.establishmentDate);
+      }
+      // 如果都没有，按ID倒序（新ID通常数字更大）
+      return b.id.localeCompare(a.id);
+    });
+    
     res.json({
       status: 0,
       message: '获取成功',
-      data: data.batterySwapStations
+      data: sortedStations
     });
   } catch (error) {
     log('error', `获取站点列表失败: ${error.message}`);
@@ -125,10 +140,13 @@ export const createStation = (req, res) => {
     // 自动生成站点ID
     const stationId = generateStationId(stations);
     
-    // 添加新站点
+    // 添加新站点，包含创建时间和更新时间
+    const now = new Date().toISOString();
     const stationWithId = {
         ...stationData,
-        id: stationId
+        id: stationId,
+        createdAt: now,
+        updatedAt: now
     };
 
     // 添加新站点
@@ -177,8 +195,62 @@ export const updateStation = (req, res) => {
       });
     }
     
-    // 更新站点数据
-    data.batterySwapStations[index] = { ...data.batterySwapStations[index], ...updates };
+    const currentStation = data.batterySwapStations[index];
+    
+    // 如果更新包含photos字段，需要清理不存在的照片文件
+    if (updates.photos !== undefined) {
+      const stationPhotoDir = path.join(DATA_DIR, 'pictures', id);
+      
+      // 如果照片数组为空或不存在，删除整个照片文件夹
+      if (!updates.photos || updates.photos.length === 0) {
+        try {
+          if (fs.existsSync(stationPhotoDir)) {
+            fs.rmSync(stationPhotoDir, { recursive: true, force: true });
+            log('info', `站点 ${id} 照片文件夹已删除: ${stationPhotoDir}`);
+          }
+        } catch (dirError) {
+          log('error', `删除站点照片文件夹失败: ${dirError.message}`);
+        }
+      } else {
+        // 如果有照片，检查并删除不存在于新photos数组中的文件
+        try {
+          if (fs.existsSync(stationPhotoDir)) {
+            const existingFiles = fs.readdirSync(stationPhotoDir);
+            const newPhotoFilenames = updates.photos.map(photo => photo.filename);
+            
+            // 删除不在新photos数组中的文件
+            existingFiles.forEach(filename => {
+              if (!newPhotoFilenames.includes(filename)) {
+                const filePath = path.join(stationPhotoDir, filename);
+                try {
+                  fs.unlinkSync(filePath);
+                  log('info', `删除不存在的照片文件: ${filePath}`);
+                } catch (fileError) {
+                  log('error', `删除照片文件失败: ${filePath}, 错误: ${fileError.message}`);
+                }
+              }
+            });
+            
+            // 检查文件夹是否为空，如果为空则删除
+            const remainingFiles = fs.readdirSync(stationPhotoDir);
+            if (remainingFiles.length === 0) {
+              fs.rmdirSync(stationPhotoDir);
+              log('info', `空照片文件夹已删除: ${stationPhotoDir}`);
+            }
+          }
+        } catch (cleanupError) {
+          log('error', `清理照片文件失败: ${cleanupError.message}`);
+        }
+      }
+    }
+    
+    // 更新站点数据，添加更新时间戳
+    const now = new Date().toISOString();
+    data.batterySwapStations[index] = { 
+      ...data.batterySwapStations[index], 
+      ...updates,
+      updatedAt: now
+    };
     
     // 更新metadata
     data.metadata.lastUpdated = new Date().toISOString();
@@ -432,21 +504,52 @@ export const deleteStationPhoto = (req, res) => {
     
     const photoIndex = station.photos.findIndex(p => p.id === photoId);
     if (photoIndex === -1) {
-      return res.status(404).json({
-        status: 1,
-        message: '照片不存在'
+      log('warn', `尝试删除不存在的照片: 站点ID=${id}, 照片ID=${photoId}`);
+      
+      // 照片不存在，但这可能是正常情况（已被删除），返回成功状态
+      return res.json({
+        status: 0,
+        message: '照片删除成功（照片不存在，可能已被删除）',
+        photoId: photoId,
+        stationId: id,
+        warning: '照片记录不存在，可能已被删除'
       });
     }
     
     const photo = station.photos[photoIndex];
     
     // 删除文件
-    const filePath = path.join(DATA_DIR, 'pictures', id, photo.filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    let fileDeleted = false;
+    let fileDeleteError = null;
+    
+    try {
+      // 尝试使用photo.path构建文件路径
+      let filePath;
+      if (photo.path) {
+        // 如果photo有path属性，使用相对路径
+        const relativePath = photo.path.startsWith('/') ? photo.path.substring(1) : photo.path;
+        filePath = path.join(DATA_DIR, relativePath);
+      } else {
+        // 否则使用默认路径
+        filePath = path.join(DATA_DIR, 'pictures', id, photo.filename);
+      }
+      
+      log('info', `尝试删除照片文件: ${filePath}`);
+      
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        fileDeleted = true;
+        log('info', `照片文件删除成功: ${filePath}`);
+      } else {
+        log('warn', `照片文件不存在: ${filePath}`);
+        fileDeleted = true; // 文件不存在也算删除成功
+      }
+    } catch (fileError) {
+      fileDeleteError = fileError;
+      log('error', `删除照片文件失败: ${fileError.message}`);
     }
     
-    // 从数组中移除
+    // 从数组中移除照片记录
     station.photos.splice(photoIndex, 1);
     
     // 更新metadata
@@ -461,10 +564,23 @@ export const deleteStationPhoto = (req, res) => {
       });
     }
     
-    res.json({
-       status: 0,
-       message: '照片删除成功'
-     });
+    // 根据文件删除结果返回响应
+    if (fileDeleteError) {
+      // 文件删除失败，但数据库记录已删除，仍然返回成功状态
+      res.json({
+        status: 0,
+        message: '照片删除成功',
+        warning: `文件删除错误: ${fileDeleteError.message}`,
+        fileDeleted: false
+      });
+    } else {
+      // 完全成功
+      res.json({
+        status: 0,
+        message: '照片删除成功',
+        fileDeleted: fileDeleted
+      });
+    }
    } catch (error) {
      log('error', `删除照片失败: ${error.message}`);
      res.status(500).json({
