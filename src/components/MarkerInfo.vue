@@ -17,7 +17,7 @@
           <el-tag 
             :type="getStatusType(markerData.status)"
             size="default"
-            class="status-tag"
+            :class="['status-tag', markerData.status === '存量' ? 'status-tag-存量' : '']"
           >
             {{ markerData.status }}
           </el-tag>
@@ -140,9 +140,19 @@
                 <span class="info-label">坐标位置</span>
                 <span class="info-value">{{ markerData.coordinates.latitude }}, {{ markerData.coordinates.longitude }}</span>
               </div>
-              <div class="info-row">
-                <span class="info-label">服务半径</span>
-                <span class="info-value">{{ markerData.serviceRadius }} 公里</span>
+              <div class="info-row with-switch">
+                <div class="info-content">
+                  <span class="info-label">服务半径</span>
+                  <span class="info-value">{{ markerData.serviceRadius }} 公里</span>
+                </div>
+                <el-switch
+                  v-model="serviceRadiusEnabled"
+                  size="small"
+                  active-text=""
+                  inactive-text=""
+                  class="service-switch"
+                  @change="handleServiceRadiusToggle"
+                />
               </div>
             </div>
           </div>
@@ -291,6 +301,25 @@ interface BatterySwapStation {
 const dialogVisible = ref(false)
 const markerData = ref<BatterySwapStation | null>(null)
 const currentPhotoIndex = ref(0)
+const serviceRadiusStates = ref<Map<string, boolean>>(new Map())
+
+// 计算当前站点的服务半径开关状态
+const serviceRadiusEnabled = computed({
+  get: () => {
+    if (!markerData.value) return false
+    return serviceRadiusStates.value.get(markerData.value.id) ?? false
+  },
+  set: (value: boolean) => {
+    if (markerData.value) {
+      serviceRadiusStates.value.set(markerData.value.id, value)
+    }
+  }
+})
+
+// 定义事件发射
+const emit = defineEmits<{
+  'service-radius-toggle': [enabled: boolean, markerId: string]
+}>()
 
 // 计算当前照片
 const currentPhoto = computed(() => {
@@ -333,6 +362,8 @@ const getStatusType = (status: string) => {
       return 'danger'
     case '建设中':
       return 'info'
+    case '存量':
+      return ''
     default:
       return 'info'
   }
@@ -350,6 +381,60 @@ const getCabinetStatusType = (status: string) => {
       return 'info'
   }
 }
+
+// 根据站点状态获取圆圈边框颜色
+const getCircleStrokeColor = (status: string): string => {
+  switch (status) {
+    case '运营中':
+      return '#52c41a'; // 绿色
+    case '维护中':
+      return '#faad14'; // 橙色
+    case '暂停服务':
+      return '#ff4d4f'; // 红色
+    case '建设中':
+      return '#1890ff'; // 蓝色
+    case '存量':
+      return '#722ed1'; // 紫色
+    default:
+      return '#1890ff'; // 蓝色
+  }
+};
+
+// 根据站点状态获取圆圈填充颜色
+const getCircleFillColor = (status: string): string => {
+  switch (status) {
+    case '运营中':
+      return '#52c41a'; // 绿色
+    case '维护中':
+      return '#faad14'; // 橙色
+    case '暂停服务':
+      return '#ff4d4f'; // 红色
+    case '建设中':
+      return '#1890ff'; // 蓝色
+    case '存量':
+      return '#722ed1'; // 紫色
+    default:
+      return '#1890ff'; // 蓝色
+  }
+};
+
+// 根据站点状态获取圆圈边框样式
+const getCircleStrokeStyle = (status: string): string => {
+  switch (status) {
+    case '运营中':
+      return 'solid'; // 实线
+    case '维护中':
+      return 'dashed'; // 虚线
+    case '暂停服务':
+      return 'dotted'; // 点线
+    case '建设中':
+      return 'solid'; // 实线
+    case '存量':
+      return 'solid'; // 实线
+    default:
+      return 'solid'; // 实线
+  }
+};
 
 // 设置当前照片
 const setCurrentPhoto = (index: number) => {
@@ -372,13 +457,23 @@ const openDialog = (data: BatterySwapStation) => {
   dialogVisible.value = true
 }
 
+// 监听服务半径开关变化
+const handleServiceRadiusToggle = () => {
+  if (markerData.value) {
+    emit('service-radius-toggle', serviceRadiusEnabled.value, markerData.value.id)
+  }
+}
+
 const handleClose = (done: () => void) => {
   done()
 }
 
 defineExpose({
   markerData,
-  openDialog
+  openDialog,
+  getCircleStrokeColor,
+  getCircleFillColor,
+  getCircleStrokeStyle
 })
 </script>
 
@@ -683,9 +778,47 @@ defineExpose({
 }
 
 .info-row.full-width {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-row.full-width .info-value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* 当容器宽度不够时，允许地址换行显示 */
+@media (max-width: 480px) {
+  .info-row.full-width {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .info-row.full-width .info-value {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-break: break-word;
+  }
+}
+
+.info-row.with-switch {
+  justify-content: space-between;
+}
+
+.info-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.service-switch {
+  margin-left: 12px;
+  flex-shrink: 0;
 }
 
 .info-label {
@@ -1091,5 +1224,12 @@ defineExpose({
   .status-label {
     font-size: 10px;
   }
+}
+
+/* 存量自定义样式 */
+.status-tag-存量 {
+  background-color: #f3f0ff !important;
+  border-color: #722ed1 !important;
+  color: #722ed1 !important;
 }
 </style>

@@ -123,7 +123,8 @@ const getStatusText = (status: string): string => {
     '运营中': '正常运营',
     '维护中': '设备维护',
     '暂停服务': '暂停服务',
-    '建设中': '建设中'
+    '建设中': '建设中',
+    '存量': '存量管理'
   }
   return statusMap[status] || status
 }
@@ -136,7 +137,8 @@ const getMarkerIcon = (): string => {
       '运营中': props.batteryIcon, // 使用传入的电池图标
       '维护中': props.batteryIcon, // 使用传入的电池图标
       '暂停服务': props.stationIcon, // 使用传入的换电站图标
-      '建设中': props.stationIcon // 使用传入的换电站图标
+      '建设中': props.stationIcon, // 使用传入的换电站图标
+      '存量': props.stationIcon // 使用传入的换电站图标
     }
     return iconMap[props.marker.status] || props.stationIcon
   }
@@ -248,6 +250,17 @@ const getMarkerIcon = (): string => {
   opacity: 0.7;
 }
 
+.marker-存量 .marker-icon {
+  background: linear-gradient(135deg, #722ed1 0%, #531dab 100%);
+  box-shadow: 0 4px 12px rgba(114, 46, 209, 0.4);
+}
+
+.marker-存量 .marker-icon i {
+  color: #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  opacity: 0.9;
+}
+
 /* 状态指示器 - 外围边框 */
 .status-indicator {
   position: absolute;
@@ -288,6 +301,11 @@ const getMarkerIcon = (): string => {
 .marker-建设中 .status-ring {
   border-color: #1890ff;
   box-shadow: 0 0 8px rgba(24, 144, 255, 0.6);
+}
+
+.marker-存量 .status-ring {
+  border-color: #722ed1;
+  box-shadow: 0 0 8px rgba(114, 46, 209, 0.6);
 }
 
 /* 可用数量标签 */
@@ -492,6 +510,15 @@ const getMarkerIcon = (): string => {
 
 .marker-hover.marker-建设中 .marker-icon i {
   opacity: 0.9;
+  transform: scale(1.1);
+}
+
+.marker-hover.marker-存量 .marker-icon {
+  box-shadow: 0 6px 20px rgba(114, 46, 209, 0.6);
+}
+
+.marker-hover.marker-存量 .marker-icon i {
+  opacity: 1;
   transform: scale(1.1);
 }
 </style>

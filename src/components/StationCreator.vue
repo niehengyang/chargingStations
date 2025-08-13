@@ -83,34 +83,35 @@
                   <el-option label="维护中" value="维护中" />
                   <el-option label="暂停服务" value="暂停服务" />
                   <el-option label="建设中" value="建设中" />
+                  <el-option label="存量" value="存量" />
                 </el-select>
               </el-form-item>
             </el-col>
           </el-row>
 
-            <el-row :gutter="20">
-              <el-col :span="8">
-                <el-form-item label="省份" prop="province">
-                  <el-select v-model="formData.province" placeholder="请选择省份" style="width: 100%">
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="省份" prop="province">
+                <el-select v-model="formData.province" placeholder="请选择省份" style="width: 100%">
                   <el-option label="云南省" value="云南省" />
                 </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="城市" prop="city">
-                  <el-select v-model="formData.city" placeholder="请选择城市" style="width: 100%">
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="城市" prop="city">
+                <el-select v-model="formData.city" placeholder="请选择城市" style="width: 100%">
                   <el-option v-for="(cityItem, index) in cities" :key="index" :label="cityItem.name" :value="cityItem.name" />
                 </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="区域" prop="district">
-                  <el-select v-model="formData.district" placeholder="请选择区域" style="width: 100%">
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="区域" prop="district">
+                <el-select v-model="formData.district" placeholder="请选择区域" style="width: 100%">
                   <el-option v-for="district in districts" :key="district" :label="district" :value="district" />
                 </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
+              </el-form-item>
+            </el-col>
+          </el-row>
 
             <el-form-item label="详细地址" prop="address">
             <el-input v-model="formData.address" placeholder="请输入详细地址" />
@@ -210,28 +211,13 @@
                 
                 <el-row :gutter="20">
                   <el-col :span="8">
-                  <el-form-item :label="`电池柜ID`" :prop="`batteryCabinets.${index}.cabinetId`">
-                    <el-input v-model="cabinet.cabinetId" placeholder="请输入电池柜ID" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="8">
-                  <el-form-item :label="`供应商`" :prop="`batteryCabinets.${index}.supplier`">
-                    <el-input v-model="cabinet.supplier" placeholder="请输入供应商" />
-                  </el-form-item>
-                </el-col> 
-                  <el-col :span="8">
                     <el-form-item :label="`电池柜ID`" :prop="`batteryCabinets.${index}.cabinetId`">
                       <el-input v-model="cabinet.cabinetId" placeholder="请输入电池柜ID" />
                     </el-form-item>
-                  </el-col> 
+                  </el-col>
                   <el-col :span="8">
-                    <el-form-item :label="`电池数量`" :prop="`batteryCabinets.${index}.batteryCount`">
-                      <el-input-number 
-                        v-model="cabinet.batteryCount" 
-                        :min="1" 
-                        :max="100"
-                        style="width: 100%"
-                      />
+                    <el-form-item :label="`供应商`" :prop="`batteryCabinets.${index}.supplier`">
+                      <el-input v-model="cabinet.supplier" placeholder="请输入供应商" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="8">
@@ -247,12 +233,22 @@
                 </el-row>
                 
                 <el-row :gutter="20">
-                  <el-col :span="12">
-                    <el-form-item :label="`容量`" :prop="`batteryCabinets.${index}.capacity`">
-                      <el-input v-model="cabinet.capacity" placeholder="如：60kWh" />
+                  <el-col :span="8">
+                    <el-form-item :label="`电池数量`" :prop="`batteryCabinets.${index}.batteryCount`">
+                      <el-input-number 
+                        v-model="cabinet.batteryCount" 
+                        :min="1" 
+                        :max="100"
+                        style="width: 100%"
+                      />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="12">
+                  <el-col :span="8">
+                    <el-form-item :label="`容量`" :prop="`batteryCabinets.${index}.capacity`">
+                      <el-input v-model="cabinet.capacity" placeholder="如：60kWh" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="8">
                     <el-form-item :label="`状态`" :prop="`batteryCabinets.${index}.status`">
                       <el-select v-model="cabinet.status" placeholder="请选择状态" style="width: 100%">
                         <el-option label="可用" value="可用" />

@@ -83,6 +83,7 @@
                     <el-option label="维护中" value="维护中" />
                     <el-option label="暂停服务" value="暂停服务" />
                     <el-option label="建设中" value="建设中" />
+                    <el-option label="存量" value="存量" />
                   </el-select>
                 </el-form-item>
               </el-col>

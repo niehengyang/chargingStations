@@ -1,5 +1,5 @@
 // 充电站状态类型
-export type ChargingStationStatus = "运营中" | "维护中" | "暂停服务" | "建设中";
+export type ChargingStationStatus = "运营中" | "维护中" | "暂停服务" | "建设中" | "存量";
 
 // 充电站类型
 export type ChargingStationType = "电动汽车" | "电动自行车";
