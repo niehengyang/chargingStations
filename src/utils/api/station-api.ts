@@ -181,18 +181,28 @@ export class StationApiService {
         if (import.meta.env.VITE_CACHE_ENABLED === "true") {
             const cached = localStorage.getItem(cacheKey);
             if (cached) {
-                const { data, timestamp } = JSON.parse(cached);
-                const age = Date.now() - timestamp;
-                if (age < cacheMaxAge) {
-                    if (import.meta.env.VITE_DEBUG_MODE === "true") {
-                        console.log(`[Cache] 使用缓存的换电站数据 (${age}ms old)`);
+                try {
+                    const { data, timestamp } = JSON.parse(cached);
+                    const age = Date.now() - timestamp;
+                    if (age < cacheMaxAge && data && data.status !== undefined) {
+                        if (import.meta.env.VITE_DEBUG_MODE === "true") {
+                            console.log(`[Cache] 使用缓存的换电站数据 (${age}ms old)`);
+                        }
+                        return data;
                     }
-                    return data;
+                } catch (error) {
+                    console.warn('缓存数据解析失败，清除缓存:', error);
+                    localStorage.removeItem(cacheKey);
                 }
             }
         }
 
         const data = await getAllStations();
+
+        // 确保返回的数据格式正确
+        if (!data || data.status === undefined) {
+            throw new Error('API返回数据格式异常');
+        }
 
         if (import.meta.env.VITE_CACHE_ENABLED === "true") {
             localStorage.setItem(

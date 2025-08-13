@@ -231,37 +231,96 @@ const stationCreatorRef = ref()
 
 // 恢复区县筛选计算属性
 const districts = computed(() => {
-  const set = new Set<string>()
-  const stations = allStations.value || []
-  stations.forEach(station => {
-    if (!station.address) return
-    const match = station.address.match(/(?:云南省)?昆明市([一-龥]+?)区/)
-    if (match && match[1]) set.add(match[1] + '区')
-  })
-  return Array.from(set).sort()
+  try {
+    const set = new Set<string>()
+    const stations = allStations.value || []
+    
+    // 确保stations是数组
+    if (!Array.isArray(stations)) {
+      console.warn('allStations.value不是数组:', stations)
+      return []
+    }
+    
+    stations.forEach(station => {
+      // 确保station对象存在
+      if (!station) return
+      
+      // 优先使用district字段
+      if (station.district && typeof station.district === 'string' && station.district.trim()) {
+        set.add(station.district.trim())
+      }
+      // 如果district字段为空，尝试从address中提取
+      else if (station.address && typeof station.address === 'string') {
+        const match = station.address.match(/(?:云南省)?昆明市([一-龥]+?)区/)
+        if (match && match[1]) {
+          set.add(match[1] + '区')
+        }
+      }
+    })
+    
+    const result = Array.from(set)
+    return result.sort()
+  } catch (error) {
+    console.error('districts计算属性出错:', error)
+    return []
+  }
 })
 
 // 添加筛选和分页计算属性
 const filteredStations = computed(() => {
-  let result = allStations.value || []
-  if (searchKeyword.value.trim()) {
-    const kw = searchKeyword.value.trim().toLowerCase()
-    result = result.filter(station =>
-      station.name.toLowerCase().includes(kw) ||
-      station.address.toLowerCase().includes(kw)
-    )
+  try {
+    let result = allStations.value || []
+    
+    // 确保result是数组
+    if (!Array.isArray(result)) {
+      console.warn('allStations.value不是数组，使用空数组')
+      return []
+    }
+    
+    if (searchKeyword.value && searchKeyword.value.trim()) {
+      const kw = searchKeyword.value.trim().toLowerCase()
+      result = result.filter(station => {
+        if (!station) return false
+        const name = station.name || ''
+        const address = station.address || ''
+        return name.toLowerCase().includes(kw) || address.toLowerCase().includes(kw)
+      })
+    }
+    
+    if (selectedDistrict.value) {
+      result = result.filter(station => {
+        if (!station) return false
+        // 优先匹配district字段
+        if (station.district && typeof station.district === 'string' && station.district.trim() === selectedDistrict.value) {
+          return true
+        }
+        // 如果district字段不匹配，尝试匹配address字段
+        return station.address && typeof station.address === 'string' && station.address.includes(selectedDistrict.value)
+      })
+    }
+    
+    return result
+  } catch (error) {
+    console.error('filteredStations计算属性出错:', error)
+    return []
   }
-  if (selectedDistrict.value) {
-    result = result.filter(station =>
-      station.address && station.address.includes(selectedDistrict.value)
-    )
-  }
-  return result
 })
 
 const pagedStations = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return filteredStations.value?.slice(start, start + pageSize.value) || []
+  try {
+    const filtered = filteredStations.value
+    if (!Array.isArray(filtered)) {
+      console.warn('filteredStations不是数组，返回空数组')
+      return []
+    }
+    
+    const start = (currentPage.value - 1) * pageSize.value
+    const end = start + pageSize.value
+    return filtered.slice(start, end)
+  } catch (error) {
+    console.error('pagedStations计算属性出错:', error)
+    return []
+  }
 })
 
 // 添加缺失的事件处理方法
@@ -293,18 +352,24 @@ async function fetchStations() {
     console.log('API响应:', response)
     
     // 处理服务器返回的数据结构 {status, message, data}
-    if (response.status === 0 && response.data) {
+    if (response && response.status === 0 && Array.isArray(response.data)) {
       allStations.value = response.data
-      console.log('成功设置站点数据:', allStations.value)
+      console.log('成功设置站点数据:', allStations.value.length, '个站点')
+    } else if (Array.isArray(response)) {
+      // 兼容直接返回数组的情况
+      allStations.value = response
+      console.log('使用数组格式数据:', allStations.value.length, '个站点')
     } else {
-      // 如果响应格式不正确，尝试直接使用响应数据
-      allStations.value = Array.isArray(response) ? response : []
-      console.warn('API响应格式异常:', response)
+      // 如果响应格式不正确，设置为空数组
+      allStations.value = []
+      console.warn('API响应格式异常，设置为空数组:', response)
+      ElMessage.warning('获取到的数据格式异常，请检查服务器状态')
     }
-    console.log("获取换电站数据成功:", response)
+    console.log("获取换电站数据完成")
   } catch (error) {
-    // console.error('获取换电站数据失败:', error)
-    ElMessage.error('获取换电站数据失败: ' + error.message)
+    console.error('获取换电站数据失败:', error)
+    ElMessage.error('获取换电站数据失败: ' + (error?.message || '未知错误'))
+    // 确保allStations.value始终是数组
     allStations.value = []
   } finally {
     loading.value = false
