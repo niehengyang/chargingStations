@@ -11,7 +11,7 @@ export const initDataDirectory = () => {
     }
     
     if (!fs.existsSync(DB_PATH)) {
-      fs.writeFileSync(DB_PATH, JSON.stringify({ items: [] }, null, 2));
+      fs.writeFileSync(DB_PATH, JSON.stringify({ batterySwapStations: [] }, null, 2));
       log('info', `创建数据库文件: ${DB_PATH}`);
     } else {
       // 检查文件大小
@@ -34,7 +34,7 @@ export const readData = (filePath = DB_PATH) => {
     return JSON.parse(rawData);
   } catch (error) {
     log('error', `读取数据错误: ${error.message}`);
-    return { items: [] };
+    return { batterySwapStations: [] };
   }
 };
 
