@@ -12,6 +12,16 @@
       :style="mapContainerStyle"
     >
       
+      <!-- 地址搜索框 -->
+      <el-amap-search-box
+        :visible="true"
+        :debounce="1000"
+        :placeholder="'请输入地址搜索'"
+        @select="handleSearchSelect"
+        @choose="handleSearchChoose"
+        @search="handleSearch"
+      />
+      
       <!-- 标记点 -->
       <el-amap-marker
         v-if="selectedMarker"
@@ -175,6 +185,62 @@ const formatCoordinates = (coords: [number, number]) => {
   return `${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`
 }
 
+// 处理搜索位置选择
+const handleLocationSelect = (location: [number, number], name: string) => {
+  // 将地图中心移动到选中的位置，但不改变缩放级别
+  if (mapInstance.value) {
+    mapInstance.value.setCenter(location)
+  }
+  ElMessage.success(`已定位到: ${name}`)
+}
+
+// 处理搜索选择事件
+const handleSearchSelect = (e: any) => {
+  let location: [number, number] | null = null
+  let name = ''
+  
+  if (e && e.location) {
+    location = [e.location.lng, e.location.lat]
+    name = e.name || e.address || '选中位置'
+  } else if (e && e.poi) {
+    location = [e.poi.location.lng, e.poi.location.lat]
+    name = e.poi.name || e.poi.address || '选中位置'
+  } else if (e && e.lng && e.lat) {
+    location = [e.lng, e.lat]
+    name = e.name || e.address || '选中位置'
+  }
+  
+  if (location) {
+    handleLocationSelect(location, name)
+  }
+}
+
+// 处理搜索事件
+const handleSearch = (e: any) => {
+  // 搜索事件主要用于调试
+}
+
+// 处理搜索确认事件
+const handleSearchChoose = (e: any) => {
+  let location: [number, number] | null = null
+  let name = ''
+  
+  if (e && e.location) {
+    location = [e.location.lng, e.location.lat]
+    name = e.name || e.address || '选中位置'
+  } else if (e && e.poi) {
+    location = [e.poi.location.lng, e.poi.location.lat]
+    name = e.poi.name || e.poi.address || '选中位置'
+  } else if (e && e.lng && e.lat) {
+    location = [e.lng, e.lat]
+    name = e.name || e.address || '选中位置'
+  }
+  
+  if (location) {
+    handleLocationSelect(location, name)
+  }
+}
+
 // 暴露方法给父组件
 defineExpose({
   clearMarker,
@@ -191,6 +257,15 @@ defineExpose({
   }
 })
 </script>
+
+<style lang="scss">
+.amap-sug-result {
+  z-index: 10000 !important;
+  height: 300px;
+  width: 200px !important;
+  max-width: calc(90% - 40px) !important;
+}
+</style>
 
 <style lang="scss" scoped>
 .map-picker {
@@ -332,6 +407,42 @@ defineExpose({
   100% {
     transform: scale(1);
   }
+}
+
+// 搜索框样式
+:deep(.el-vue-search-box-container) {
+  width: 260px !important;
+}
+:deep(.el-amap-search-box) {
+  position: absolute !important;
+  top: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 200px !important;
+  max-width: calc(90% - 40px) !important;
+}
+
+:deep(.el-amap-search-box .el-input) {
+  background: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1) !important;
+  overflow: hidden !important;
+}
+
+:deep(.el-amap-search-box .el-input__wrapper) {
+  border: none !important;
+  box-shadow: none !important;
+  height: 40px !important;
+}
+
+:deep(.el-amap-search-box .el-input__inner) {
+  height: 40px !important;
+  font-size: 14px !important;
+  padding-left: 12px !important;
+}
+
+:deep(.el-amap-search-box .el-input__prefix) {
+  margin-left: 12px !important;
 }
 
 // 响应式设计

@@ -57,8 +57,11 @@ export const getAllStations = (req, res) => {
   try {
     const data = readData(STATIONS_FILE);
     
+    // 确保 batterySwapStations 存在且是数组
+    const stations = data.batterySwapStations || [];
+    
     // 按创建时间倒序排列，最新的在前面
-    const sortedStations = data.batterySwapStations.sort((a, b) => {
+    const sortedStations = stations.sort((a, b) => {
       // 如果有createdAt字段，使用它进行排序
       if (a.createdAt && b.createdAt) {
         return new Date(b.createdAt) - new Date(a.createdAt);
